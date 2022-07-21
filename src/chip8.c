@@ -26,24 +26,6 @@ void Unimplemented(Chip8* cpu) {
     exit(1);
 }
 
-void draw_sprite(uint8_t x, uint8_t y, uint8_t n, Chip8* cpu) {
-    unsigned row = y, col = x;
-    unsigned bit_index;
-    unsigned byte_index;
-
-    cpu->V[0xf] = 0;
-    for (byte_index = 0; byte_index < n; byte_index++) {
-        uint8_t byte = cpu->memory[cpu->I + byte_index];
-
-        for (bit_index = 0; bit_index < 8; bit_index++) {
-            uint8_t bit = (byte >> byte_index) & 0x1;
-            uint8_t * pixelp = &cpu->screen[((row + byte_index) % SCREEN_HEIGHT) * SCREEN_WIDTH + ((col + (7 - bit_index)) & SCREEN_WIDTH)];
-            if (bit == 1 && *pixelp == 1) cpu->V[0xf] = 1;
-            *pixelp ^= bit;
-        }
-    }
-}
-
 int emulate_op(Chip8* cpu) {
 
     uint16_t opcode;
@@ -172,7 +154,23 @@ int emulate_op(Chip8* cpu) {
         } break;
 
         case 0xd000: {             // SPRITE Vx,Vy,$N
-            draw_sprite(cpu->V[x], cpu->V[y], n, cpu);
+            unsigned short x = cpu->V[x];
+            unsigned short y = cpu->V[y];
+            unsigned short height = n;
+            unsigned short pixel;
+
+            cpu->V[0xf] = 0;
+            for (int yline = 0; yline < height; yline++) {
+                pixel = cpu->memory[cpu->I + yline];
+                for (int xline = 0; xline < 8; xline++) {
+                    if ((pixel & (0x80 >> xline)) != 0) {
+                        if (cpu->screen[(x + xline + ((y + yline) * 64))] == 1) {
+                            cpu->V[0xf] = 1;
+                        }
+                        cpu->screen[x + xline + ((y + yline) * 64)] ^= 1;
+                    }
+                }
+            }
             cpu->PC+=2;
         } break;
         
