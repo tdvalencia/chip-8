@@ -12,7 +12,7 @@ void DisassembleCHIP8(uint8_t *codebuffer, int pc) {
         case 0x0: {
             switch (code[1]) {
                 case 0xe0: printf("%-10s", "CLS"); break;    //clear screen
-                case 0x00: printf("%-10s", "RTS"); break;    //return
+                case 0xee: printf("%-10s", "RTS"); break;    //return
                 default: printf("Unknown 0."); break;
             }
         } break;
@@ -33,7 +33,7 @@ void DisassembleCHIP8(uint8_t *codebuffer, int pc) {
                     case 4: printf("%-10s V%01x,V%02x", "ADD", code[0]&0xf, code[1]>>4); break;
                     case 5: printf("%-10s V%01X,V%01X,V%01X", "SUB", code[0]&0xf, code[0]&0xf, code[1]>>4); break;
                     case 6: printf("%-10s V%01X,V%01X", "SHR", code[0]&0xf, code[1]>>4); break;
-                    case 7: printf("%-10s V%01X,V%01X,V%01X", "SUB.", code[0]&0xf, code[1]>>4, code[1]>>4); break;
+                    case 7: printf("%-10s V%01X,V%01X,V%01X", "SUBB", code[0]&0xf, code[1]>>4, code[1]>>4); break;
                     case 0xe: printf("%-10s V%01X,V%01X", "SHL", code[0]&0xf, code[1]>>4); break;
                     default: printf("Unknown 8."); break;
                 }
@@ -45,19 +45,19 @@ void DisassembleCHIP8(uint8_t *codebuffer, int pc) {
         case 0xd: printf("%-10s V%01x,V%01x,$%02x", "SPRITE", code[0]&0xf, code[1]>>4, code[1]&0xf); break;
         case 0xe: {
             switch (code[1]) {
-                case 0x9e: printf("%-10s V%01x", "KEY_Y"); break;
-                case 0xa1: printf("%-10s V%01x", "KEY_N"); break;
+                case 0x9e: printf("%-10s V%01x", "SKIP.KEY_Y", code[0]&0xf); break;
+                case 0xa1: printf("%-10s V%01x", "SKIP.KEY_N", code[0]&0xf); break;
             }
         } break;
         case 0xf: {
             switch (code[1]) {
                 case 0x07: printf("%-10s V%01x,DELAY", "MOV", code[0]&0xf); break;
-                case 0x0a: printf("%-10s V%01x", "KEY", code[0]&0xf); break;
+                case 0x0a: printf("%-10s V%01x", "WAITKEY", code[0]&0xf); break;
                 case 0x15: printf("%-10s DELAY,V%01x", "MOV", code[0]&0xf); break;
                 case 0x18: printf("%-10s SOUND,V%01x", "MOV", code[0]&0xf); break;
                 case 0x1e: printf("%-10s I,V%01x", "ADI", code[0]&0xf); break;
                 case 0x29: printf("%-10s I,V%01x", "SPRITECHAR", code[0]&0xf); break;
-                case 0x33: printf("%-10s I,V%01x", "MOVBCD", code[0]&0xf); break;
+                case 0x33: printf("%-10s I,V%01x", "BCD MOV", code[0]&0xf); break;
                 case 0x55: printf("%-10s (I),V0-V%01x", "REG_DUMP", code[0]&0xf); break;
                 case 0x65: printf("%-10s V0-V%01x,(I)", "REG_LOAD", code[0]&0xf); break;
             }

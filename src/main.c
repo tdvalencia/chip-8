@@ -24,14 +24,14 @@ void read_file_to_memory(Chip8* cpu, const char* filename, uint32_t offset) {
 
 int main(int argc, char* argv[]) {
 
-    char filename[] = "rom/test_opcode.ch8";
+    char filename[] = "rom/delay_timer_test.ch8";
 
     Chip8* cpu = InitChip8();
     read_file_to_memory(cpu, filename, 0x200);
 
     printf("\nPC   B1 B2\n");
     printf("----------\n");
-    while (1) {
+    while (cpu->halt == 0) {
         emulate_op(cpu);
     }
 
