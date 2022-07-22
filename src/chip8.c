@@ -14,6 +14,7 @@ Chip8* InitChip8(void) {
     cpu->SP = 0xfa0;
     cpu->PC = 0x200;
     cpu->halt = 0;
+    cpu->draw_flag = 1;
 
     memcpy(&cpu->memory[FONT_BASE], font4x5, FONT_SIZE);
 
@@ -51,6 +52,7 @@ void emulate_op(Chip8* cpu) {
                 case 0xe0: {    // CLS
                     memset(cpu->vram, 0, sizeof(uint8_t) * 2048);
                     cpu->PC+=2;
+                    cpu->draw_flag = 1;
                     break;
                 } break;
                 case 0xee: {    // RTS
@@ -155,23 +157,27 @@ void emulate_op(Chip8* cpu) {
         } break;
 
         case 0xd000: {             // SPRITE Vx,Vy,$N
-            unsigned short x = cpu->V[x];
-            unsigned short y = cpu->V[y];
-            unsigned short height = n;
-            unsigned short pixel;
+            unsigned row = cpu->V[y];
+            unsigned col = cpu->V[x];
 
             cpu->V[0xf] = 0;
-            for (int yline = 0; yline < height; yline++) {
-                pixel = cpu->memory[cpu->I + yline];
-                for (int xline = 0; xline < 8; xline++) {
-                    if ((pixel & (0x80 >> xline)) != 0) {
-                        if (cpu->vram[(x + xline + ((y + yline) * 64))] == 1) {
-                            cpu->V[0xf] = 1;
-                        }
-                        cpu->vram[x + xline + ((y + yline) * 64)] ^= 1;
-                    }
+            for (unsigned byte_index = 0; byte_index < n; byte_index++) {
+                uint8_t byte = cpu->memory[cpu->I + byte_index];
+
+                for (unsigned bit_index = 0; bit_index < 8; bit_index++) {
+
+                    int position = ((row + byte_index) % GFX_ROWS) * 
+                            GFX_COLS + ((col + (7 - bit_index)) % GFX_COLS);
+
+                    uint8_t bit = (byte >> bit_index) & 0x1;
+                    uint8_t *pixelp = &cpu->vram[position];
+
+                    if (bit == 1 && *pixelp == 1) cpu->V[0xf] = 1;
+
+                    *pixelp = *pixelp ^ bit;
                 }
             }
+            cpu->draw_flag = 1;
             cpu->PC+=2;
         } break;
         
