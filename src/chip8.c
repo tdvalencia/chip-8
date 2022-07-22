@@ -8,13 +8,14 @@
 #include "font4x5.h"
 
 Chip8* InitChip8(void) {
-    Chip8* cpu = calloc(1, sizeof(Chip8));
+    Chip8* cpu = calloc(sizeof(Chip8), 1);
     
-    cpu->memory = calloc(1, 4096);
-    cpu->screen = &cpu->memory[0xf00];
+    cpu->memory = calloc(1024*4, 1);
     cpu->SP = 0xfa0;
     cpu->PC = 0x200;
     cpu->halt = 0;
+
+    memcpy(&cpu->memory[FONT_BASE], font4x5, FONT_SIZE);
 
     return cpu;
 }
@@ -26,7 +27,7 @@ void Unimplemented(Chip8* cpu) {
     exit(1);
 }
 
-int emulate_op(Chip8* cpu) {
+void emulate_op(Chip8* cpu) {
 
     uint16_t opcode;
     uint8_t x, y, n;
@@ -47,13 +48,13 @@ int emulate_op(Chip8* cpu) {
     switch (opcode & 0xf000) {
         case 0x0000: {
             switch (nn) {
-                case 0x00e0: {    // CLS
-                    memset(cpu->screen, 0, SCREEN_WIDTH*SCREEN_HEIGHT/8);
+                case 0xe0: {    // CLS
+                    memset(cpu->vram, 0, sizeof(uint8_t) * 2048);
                     cpu->PC+=2;
                     break;
                 } break;
-                case 0x00ee: {    // RTS
-                    cpu->PC = cpu->stack[--cpu->SP];
+                case 0xee: {    // RTS
+                    cpu->PC = cpu->stack[cpu->SP--];
                 } break;
             }
         } break;
@@ -101,17 +102,17 @@ int emulate_op(Chip8* cpu) {
                     cpu->V[x] = cpu->V[y];
                 } break;
                 case 0x1: {       // OR Vx,Vy
-                    cpu->V[x] |= cpu->V[y];
+                    cpu->V[x] = cpu->V[x] | cpu->V[y];
                 } break;
                 case 0x2: {       // AND Vx,Vy
-                    cpu->V[x] &= cpu->V[y];
+                    cpu->V[x] = cpu->V[x] & cpu->V[y];
                 } break;
                 case 0x3: {       // XOR Vx,Vy
-                    cpu->V[x] ^= cpu->V[y];
+                    cpu->V[x] = cpu->V[x] ^ cpu->V[y];
                 } break;
                 case 0x4: {       // ADD Vx,Vy
                     cpu->V[0xf] = ((int) cpu->V[x] + (int) cpu->V[y]) > 255 ? 1 : 0;
-                    cpu->V[x] += cpu->V[y];
+                    cpu->V[x] = cpu->V[x] + cpu->V[y];
                 } break;
                 case 0x5: {       // SUB Vx,Vy
                     cpu->V[0xf] = (cpu->V[x] > cpu->V[y]) ? 1 : 0;
@@ -119,7 +120,7 @@ int emulate_op(Chip8* cpu) {
                 } break;
                 case 0x6: {       // SHR Vx,1
                     cpu->V[0xf] = cpu->V[x] & 0x1;
-                    cpu->V[x] >>= 1;
+                    cpu->V[x] = (cpu->V[x] >> 1);
                 } break;
                 case 0x7: {       // SUBB Vx,(Vy-Vx)
                     cpu->V[0xf] = (cpu->V[y] > cpu->V[x]) ? 1 : 0;
@@ -127,7 +128,7 @@ int emulate_op(Chip8* cpu) {
                 } break;
                 case 0xe: {     // SHL Vx,1
                     cpu->V[0xf] = (cpu->V[x] >> 7) & 0x1;
-                    cpu->V[x] <<= 1;
+                    cpu->V[x] = (cpu->V[x] << 1);
                 } break;
             }
             cpu->PC+=2;
@@ -145,7 +146,7 @@ int emulate_op(Chip8* cpu) {
         } break;
 
         case 0xb000: {             // (JMP $NNN) + V0
-            cpu->PC = nnn + (uint16_t) cpu->V[0];
+            cpu->PC = nnn + cpu->V[0];
         } break;
 
         case 0xc000: {             // RAND Vx,$NN
@@ -164,10 +165,10 @@ int emulate_op(Chip8* cpu) {
                 pixel = cpu->memory[cpu->I + yline];
                 for (int xline = 0; xline < 8; xline++) {
                     if ((pixel & (0x80 >> xline)) != 0) {
-                        if (cpu->screen[(x + xline + ((y + yline) * 64))] == 1) {
+                        if (cpu->vram[(x + xline + ((y + yline) * 64))] == 1) {
                             cpu->V[0xf] = 1;
                         }
-                        cpu->screen[x + xline + ((y + yline) * 64)] ^= 1;
+                        cpu->vram[x + xline + ((y + yline) * 64)] ^= 1;
                     }
                 }
             }
@@ -192,9 +193,8 @@ int emulate_op(Chip8* cpu) {
                     cpu->PC += 2;
                 } break;
                 case 0x0a: {    // WAITKEY Vx
-                    int i = 0;
                     while (1) {
-                        for (i = 0; i < KEY_SIZE; i++) {
+                        for (int i = 0; i < KEY_SIZE; i++) {
                             if (cpu->key_state[i]) {
                                 cpu->V[x] = i;
                                 goto got_key_press;
@@ -213,7 +213,8 @@ int emulate_op(Chip8* cpu) {
                     cpu->PC+=2;
                 } break;
                 case 0x1e: {    // ADI I,Vx
-                    cpu->I += cpu->V[x];
+                    cpu->V[0xf] = (cpu->I + cpu->V[x] > 0xfff) ? 1 : 0;
+                    cpu->I = cpu->I + cpu->V[x];
                     cpu->PC+=2;
                 } break;
                 case 0x29: {
@@ -241,6 +242,4 @@ int emulate_op(Chip8* cpu) {
             }
         } break;
     }
-
-    return 0;
 }
