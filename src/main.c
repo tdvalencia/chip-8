@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <SDL.h>
+#include <SDL2/SDL.h>
 
 #include "chip8.h"
 
@@ -10,8 +10,8 @@
 #define SCREEN_WIDTH (GFX_COLS * PIXEL_SIZE)
 #define SCREEN_HEIGHT (GFX_ROWS * PIXEL_SIZE)
 
-#define BLACK 0
-#define WHITE 255
+#define OFF 0
+#define ON 0xffffff
 
 static int debug = 1;
 
@@ -21,7 +21,7 @@ SDL_Window *window;
 SDL_Renderer *renderer;
 SDL_Texture *screen;
 SDL_Event event;
-uint8_t *pixel_buffer;
+uint32_t *pixel_buffer;
 
 void read_file_to_memory(Chip8* cpu, const char* filename, uint32_t offset) {
     FILE *f = fopen(filename, "rb");
@@ -40,32 +40,18 @@ void read_file_to_memory(Chip8* cpu, const char* filename, uint32_t offset) {
     fclose(f);
 }
 
-void paint_pixel(int row, int col, uint8_t color) {
-    row = SCREEN_HEIGHT - 1 - row;
-    pixel_buffer[row * SCREEN_WIDTH + col] = color;
-}
-
-void paint_cell(int row, int col, uint8_t color) {
-    int pixel_row = row * PIXEL_SIZE;
-    int pixel_col = col * PIXEL_SIZE;
-    int drow, dcol;
-
-    for (drow = 0; drow < PIXEL_SIZE; drow++) {
-        for (dcol = 0; dcol < PIXEL_SIZE; dcol++) {
-            paint_pixel(pixel_row + drow, pixel_col + dcol, color);
-        }
-    }
-}
-
 void draw() {
     int position;
 
-    for (int row = 0; row < GFX_ROWS; row++) {
-        for (int col = 0; col < GFX_COLS; col++) {
-            position = row * GFX_COLS + col;
-            paint_cell(row, col, cpu->vram[position] ? WHITE : BLACK);
-        }
+    for (int i = 0; i < 2048; i++) {
+        uint8_t pixel = cpu->vram[i];
+        pixel_buffer[i] = pixel ? ON : OFF;
     }
+
+    SDL_UpdateTexture(screen, NULL, pixel_buffer, 64 * sizeof(Uint32));
+    SDL_RenderClear(renderer);
+    SDL_RenderCopy(renderer, screen, NULL, NULL);
+    SDL_RenderPresent(renderer);
 }
 
 void main_loop(Chip8 *cpu) {
@@ -83,16 +69,11 @@ void main_loop(Chip8 *cpu) {
         draw();
         cpu->draw_flag = 0;
     }
-
-    SDL_UpdateTexture(screen, NULL, pixel_buffer, sizeof(uint8_t) * SCREEN_WIDTH);
-    SDL_RenderClear(renderer);
-    SDL_RenderCopy(renderer, screen, NULL, NULL);
-    SDL_RenderPresent(renderer);
 }
 
 int main(int argc, char* argv[]) {
 
-    char filename[] = "rom/test_opcode.ch8";
+    char filename[] = "rom/ibm.ch8";
 
     cpu = InitChip8();
     read_file_to_memory(cpu, filename, 0x200);
@@ -100,8 +81,8 @@ int main(int argc, char* argv[]) {
     SDL_Init(SDL_INIT_VIDEO);
     window = SDL_CreateWindow("Chip-8", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    screen = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH, SCREEN_HEIGHT);
-    pixel_buffer = (Uint8*) malloc((SCREEN_WIDTH * SCREEN_HEIGHT) * sizeof(Uint8));
+    screen = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STREAMING, GFX_COLS, GFX_ROWS);
+    pixel_buffer = (Uint32*) malloc((SCREEN_WIDTH * SCREEN_HEIGHT) * sizeof(Uint32));
 
     printf("\nPC   B1 B2\n");
     printf("----------\n");
