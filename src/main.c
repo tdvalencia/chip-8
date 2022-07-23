@@ -10,27 +10,27 @@
 #define SCREEN_WIDTH (GFX_COLS * PIXEL_SIZE)
 #define SCREEN_HEIGHT (GFX_ROWS * PIXEL_SIZE)
 
-#define OFF 0x000000
-#define ON  0xffffff
+#define OFF 0x2d3047
+#define ON  0x57b8ff
 
 static int debug = 1;
 
 uint8_t keymap[16] = {
     SDLK_x,
     SDLK_1,
+    SDLK_2,
     SDLK_3,
-    SDLK_4,
     SDLK_q,
     SDLK_w,
     SDLK_e,
-    SDLK_r,
     SDLK_a,
     SDLK_s,
     SDLK_d,
-    SDLK_f,
     SDLK_z,
-    SDLK_x,
     SDLK_c,
+    SDLK_4,
+    SDLK_r,
+    SDLK_f,
     SDLK_v,
 };
 
@@ -65,7 +65,7 @@ void read_file_to_memory(Chip8* cpu, const char* filename, uint32_t offset) {
 void draw() {
     int position;
 
-    for (int i = 0; i < 2048; i++) {
+    for (int i = 0; i < GFX_SIZE; i++) {
         uint8_t pixel = cpu->vram[i];
         pixel_buffer[i] = pixel ? ON : OFF;
     }
