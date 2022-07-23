@@ -49,14 +49,16 @@ void emulate_op(Chip8* cpu) {
     switch (opcode & 0xf000) {
         case 0x0000: {
             switch (nn) {
-                case 0xe0: {    // CLS
-                    memset(cpu->vram, 0, sizeof(uint8_t) * 2048);
-                    cpu->PC+=2;
+                case 0x00e0: {    // CLS
+                    memset(cpu->vram, 0, sizeof(uint8_t) * GFX_SIZE);
                     cpu->draw_flag = 1;
+                    cpu->PC+=2;
                     break;
                 } break;
-                case 0xee: {    // RTS
-                    cpu->PC = cpu->stack[cpu->SP--];
+                case 0x00ee: {    // RTS
+                    cpu->SP--;
+                    cpu->PC = cpu->stack[cpu->SP];
+                    cpu->PC+=2;
                 } break;
             }
         } break;
@@ -66,7 +68,8 @@ void emulate_op(Chip8* cpu) {
         } break;
 
         case 0x2000: {            // CALL $NNN
-            cpu->stack[cpu->SP++] = cpu->PC + 2;
+            cpu->stack[cpu->SP] = cpu->PC;
+            cpu->SP++;
             cpu->PC = nnn;
         } break;
 
@@ -196,19 +199,18 @@ void emulate_op(Chip8* cpu) {
             switch (nn) {
                 case 0x07: {    // MOV Vx,DELAY
                     cpu->V[x] = cpu->delay;
-                    cpu->PC += 2;
+                    cpu->PC+=2;
                 } break;
                 case 0x0a: {    // WAITKEY Vx
-                    while (1) {
-                        for (int i = 0; i < KEY_SIZE; i++) {
-                            if (cpu->key_state[i]) {
-                                cpu->V[x] = i;
-                                goto got_key_press;
-                            }
+                    for (int i = 0; i < KEY_SIZE; i++) {
+                        if (cpu->key_state[i]) {
+                            cpu->V[x] = i;
+                            goto got_key_press;
                         }
                     }
+                    return;
                     got_key_press:
-                    cpu->PC += 2;
+                    cpu->PC+=2;
                 } break;
                 case 0x15: {    // MOV DELAY,Vx
                     cpu->delay = cpu->V[x];
