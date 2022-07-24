@@ -251,3 +251,18 @@ void emulate_op(Chip8* cpu) {
         } break;
     }
 }
+
+void chip8_tick(Chip8* cpu) {
+    if (cpu->delay > 0) {
+        cpu->delay--;
+        if (cpu->delay == 0) {
+            printf("second\n");
+        }
+    }
+    if (cpu->sound > 0) {
+        cpu->sound--;
+        if (cpu->sound == 0) {
+            printf("Sound\n");
+        }
+    }
+}

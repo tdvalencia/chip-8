@@ -20,11 +20,11 @@ void DisassembleCHIP8(uint8_t *codebuffer, int pc) {
         case 0x2: printf("%-10s $%01x%02x", "CALL", code[0]&0xf, code[1]); break;
         case 0x3: printf("%-10s $%01x,$%02x", "SKIP.EQI", code[0]&0xf, code[1]); break;
         case 0x4: printf("%-10s $%01x,$%02x", "SKIP.NEI", code[0]&0xf, code[1]); break;
-        case 0x5: printf("%-10s V%01x,V%02x", "SKIP.EQ", code[0]&0xf, code[1]); break;
+        case 0x5: printf("%-10s V%01x,V%02x", "SKIP.EQ", code[0]&0xf, code[1]>>4); break;
         case 0x6: printf("%-10s V%01x,$%02x", "MVI", code[0]&0xf, code[1]); break;
         case 0x7: printf("%-10s V%01x,$%02x", "ADI", code[0]&0xf, code[1]); break;
         case 0x8: {
-            uint8_t lastnib = (code[1] >> 4);
+            uint8_t lastnib = (code[1]&0xf);
             switch (lastnib) {
                     case 0: printf("%-10s V%01x,V%02x", "MOV", code[0]&0xf, code[1]>>4); break;
                     case 1: printf("%-10s V%01x,V%02x", "OR", code[0]&0xf, code[1]>>4); break;

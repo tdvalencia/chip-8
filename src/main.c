@@ -1,11 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include <SDL2/SDL.h>
 
 #include "chip8.h"
 
 #define PIXEL_SIZE 10
+
+#define CLOCK_HZ 1000
+#define CLOCK_RATE_S ((int) (1.0 / CLOCK_HZ))
 
 #define SCREEN_WIDTH (GFX_COLS * PIXEL_SIZE)
 #define SCREEN_HEIGHT (GFX_ROWS * PIXEL_SIZE)
@@ -42,8 +46,13 @@ SDL_Texture *screen;
 SDL_Event event;
 uint32_t *pixel_buffer;
 
-char filename[] = "rom/chip8-test-suite.ch8";
+char filename[] = "rom/outlaw.ch8";
 
+struct tm *clock_prev;
+
+int timediff_s(struct tm *end, struct tm *start) {
+    return (end->tm_sec - start->tm_sec);
+}
 
 void read_file_to_memory(Chip8* cpu, const char* filename, uint32_t offset) {
     FILE *f = fopen(filename, "rb");
@@ -77,6 +86,9 @@ void draw() {
 }
 
 void main_loop(Chip8 *cpu) {
+    time_t now;
+    time(&now);
+    struct tm *clock_now = localtime(&now);
 
     emulate_op(cpu);
 
@@ -104,9 +116,17 @@ void main_loop(Chip8 *cpu) {
         draw();
         cpu->draw_flag = 0;
     }
+
+    if (timediff_s(clock_prev, clock_now) >= CLOCK_RATE_S) {
+        chip8_tick(cpu);
+        clock_prev = clock_now;
+    }
 }
 
 int main(int argc, char* argv[]) {
+    time_t now;
+    time(&now);
+    clock_prev = localtime(&now);
 
     cpu = InitChip8();
     read_file_to_memory(cpu, filename, 0x200);

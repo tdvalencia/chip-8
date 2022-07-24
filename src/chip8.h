@@ -24,3 +24,4 @@ typedef struct Chip8 {
 
 Chip8* InitChip8(void);
 void emulate_op(Chip8* cpu);
+void chip8_tick(Chip8* cpu);
