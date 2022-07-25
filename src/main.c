@@ -46,8 +46,6 @@ SDL_Texture *screen;
 SDL_Event event;
 uint32_t *pixel_buffer;
 
-char filename[] = "rom/outlaw.ch8";
-
 struct tm *clock_prev;
 
 int timediff_s(struct tm *end, struct tm *start) {
@@ -129,7 +127,13 @@ int main(int argc, char* argv[]) {
     clock_prev = localtime(&now);
 
     cpu = InitChip8();
-    read_file_to_memory(cpu, filename, 0x200);
+    if (argc == 2) {
+        read_file_to_memory(cpu, argv[1], 0x200);
+    }
+    else {
+        printf("Invalid number of arguments. Use \"./chip8.exe {name of rom}\".");
+        goto close_game;
+    }
 
     SDL_Init(SDL_INIT_VIDEO);
     window = SDL_CreateWindow("Chip-8", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
@@ -143,6 +147,7 @@ int main(int argc, char* argv[]) {
         main_loop(cpu);
     }
 
+    close_game:
     SDL_DestroyWindow(window);
     window = NULL;
     SDL_DestroyRenderer(renderer);
