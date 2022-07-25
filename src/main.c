@@ -17,8 +17,6 @@
 #define OFF 0x2d3047
 #define ON  0x57b8ff
 
-static int debug = 1;
-
 uint8_t keymap[16] = {
     SDLK_x,
     SDLK_1,
