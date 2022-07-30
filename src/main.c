@@ -2,14 +2,13 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include <SDL2/SDL.h>
+#include <SDL.h>
 
 #include "chip8.h"
 
 #define PIXEL_SIZE 10
 
-#define CLOCK_HZ 1000
-#define CLOCK_RATE_S ((int) (1.0 / CLOCK_HZ))
+#define CLOCK_HZ 60
 
 #define SCREEN_WIDTH (GFX_COLS * PIXEL_SIZE)
 #define SCREEN_HEIGHT (GFX_ROWS * PIXEL_SIZE)
@@ -41,14 +40,11 @@ Chip8* cpu;
 SDL_Window *window;
 SDL_Renderer *renderer;
 SDL_Texture *screen;
-SDL_Event event;
 uint32_t *pixel_buffer;
 
-struct tm *clock_prev;
-
-int timediff_s(struct tm *end, struct tm *start) {
-    return (end->tm_sec - start->tm_sec);
-}
+int sleep;
+uint32_t next_game_tick;
+SDL_Event event;
 
 void read_file_to_memory(Chip8* cpu, const char* filename, uint32_t offset) {
     FILE *f = fopen(filename, "rb");
@@ -68,8 +64,6 @@ void read_file_to_memory(Chip8* cpu, const char* filename, uint32_t offset) {
 }
 
 void draw() {
-    int position;
-
     for (int i = 0; i < GFX_SIZE; i++) {
         uint8_t pixel = cpu->vram[i];
         pixel_buffer[i] = pixel ? ON : OFF;
@@ -82,10 +76,6 @@ void draw() {
 }
 
 void main_loop(Chip8 *cpu) {
-    time_t now;
-    time(&now);
-    struct tm *clock_now = localtime(&now);
-
     emulate_op(cpu);
 
     while(SDL_PollEvent(&event)) {
@@ -113,23 +103,21 @@ void main_loop(Chip8 *cpu) {
         cpu->draw_flag = 0;
     }
 
-    if (timediff_s(clock_prev, clock_now) >= CLOCK_RATE_S) {
-        chip8_tick(cpu);
-        clock_prev = clock_now;
+    next_game_tick += CLOCK_HZ / 10;
+    sleep = next_game_tick - SDL_GetTicks();
+
+    if( sleep >= 0 ) {
+        SDL_Delay(sleep);
     }
 }
 
 int main(int argc, char* argv[]) {
-    time_t now;
-    time(&now);
-    clock_prev = localtime(&now);
-
     cpu = InitChip8();
     if (argc == 2) {
         read_file_to_memory(cpu, argv[1], 0x200);
     }
     else {
-        printf("Invalid number of arguments. Use \"./chip8.exe {name of rom}\".");
+        printf("Invalid number of arguments. Use \"./chip8.exe {name of rom}\".\n");
         goto close_game;
     }
 
@@ -137,12 +125,16 @@ int main(int argc, char* argv[]) {
     window = SDL_CreateWindow("Chip-8", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     screen = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, GFX_COLS, GFX_ROWS);
+
+    sleep = 0;
+    next_game_tick = SDL_GetTicks();
     pixel_buffer = (Uint32*) malloc((SCREEN_WIDTH * SCREEN_HEIGHT) * sizeof(Uint32));
 
     printf("\nPC   B1 B2\n");
     printf("----------\n");
     while (cpu->halt == 0) {
         main_loop(cpu);
+
     }
 
     close_game:

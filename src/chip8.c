@@ -15,6 +15,8 @@ Chip8* InitChip8(void) {
     cpu->PC = 0x200;
     cpu->halt = 0;
     cpu->draw_flag = 1;
+    cpu->sound = 0;
+    cpu->delay = 0;
 
     memcpy(&cpu->memory[FONT_BASE], font4x5, FONT_SIZE);
 
@@ -250,9 +252,7 @@ void emulate_op(Chip8* cpu) {
             }
         } break;
     }
-}
 
-void chip8_tick(Chip8* cpu) {
     if (cpu->delay > 0) {
         cpu->delay--;
         if (cpu->delay == 0) {
