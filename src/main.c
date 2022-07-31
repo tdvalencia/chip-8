@@ -8,7 +8,7 @@
 
 #define PIXEL_SIZE 10
 
-#define CLOCK_HZ 60
+#define TICK_RATE 1
 
 #define SCREEN_WIDTH (GFX_COLS * PIXEL_SIZE)
 #define SCREEN_HEIGHT (GFX_ROWS * PIXEL_SIZE)
@@ -103,7 +103,7 @@ void main_loop(Chip8 *cpu) {
         cpu->draw_flag = 0;
     }
 
-    next_game_tick += CLOCK_HZ / 10;
+    next_game_tick += TICK_RATE;
     sleep = next_game_tick - SDL_GetTicks();
 
     if( sleep >= 0 ) {
