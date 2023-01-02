@@ -10,6 +10,11 @@
 #define STACK_SIZE 16
 #define KEY_SIZE 16
 
+#define FONT_BASE 0
+#define FONT_SIZE 5*16
+
+extern uint8_t font4x5[];
+
 typedef struct Chip8 {
     uint8_t     V[REGISTERS];
     uint16_t    stack[STACK_SIZE];
