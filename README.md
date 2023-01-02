@@ -37,3 +37,6 @@ Use a package manager like [homebrew](https://docs.brew.sh/Installation) or [sco
     7 8 9 E                                                   A S D F
     A 0 B F                                                   Z X C V
 ````
+
+## References
+- [Awesome Chip-8](https://chip-8.github.io/links/)
